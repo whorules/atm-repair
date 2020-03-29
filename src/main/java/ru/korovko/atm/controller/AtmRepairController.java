@@ -33,8 +33,13 @@ public class AtmRepairController {
         service.deleteAll();
     }
 
-    @GetMapping("/top")
+    @GetMapping("/reasons")
     public List<String> getTopThreeRepairReasons() {
         return handler.getTopThreeRepeatableReasons();
+    }
+
+    @GetMapping("/longest")
+    public List<AtmRepair> getTopThreeLongestRepairs() {
+        return handler.getTopThreeLongestRepairs();
     }
 }

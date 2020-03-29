@@ -48,11 +48,27 @@ public class AtmRepairService {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
-                .peek(repair -> {
-                    repair.setStartDate(parseDateToCorrectFormat(repair.getStartDate()));
-                    repair.setEndDate(parseDateToCorrectFormat(repair.getEndDate()));
-                })
+                .peek(this::changeDateForAtmRepair)
                 .collect(Collectors.toList());
+    }
+
+    public void changeDateForAtmRepair(AtmRepair repair) {
+        repair.setStartDate(parseDateToCorrectFormat(repair.getStartDate()));
+        repair.setEndDate(parseDateToCorrectFormat(repair.getEndDate()));
+    }
+
+    public String parseDateToCorrectFormat(String date) {
+        String currentPattern = "yyyy-MM-dd'T'HH:mm";
+        String targetFormat = "dd-MM-yyyy HH:mm";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(currentPattern);
+        SimpleDateFormat targetSimpleDateFormat = new SimpleDateFormat(targetFormat);
+        Date currentDate;
+        try {
+            currentDate = simpleDateFormat.parse(date);
+        } catch (ParseException e) {
+            throw new CannotParseDateException(e.getMessage());
+        }
+        return targetSimpleDateFormat.format(currentDate);
     }
 
     @Transactional
@@ -76,19 +92,5 @@ public class AtmRepairService {
     private LocalDateTime parseStringToLocalDateTime(String date) {
         String pattern = "M/d/yy H:mm";
         return LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
-    }
-
-    private String parseDateToCorrectFormat(String date) {
-        String currentPattern = "yyyy-MM-dd'T'HH:mm";
-        String targetFormat = "dd-MM-yyyy HH:mm";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(currentPattern);
-        SimpleDateFormat targetSimpleDateFormat = new SimpleDateFormat(targetFormat);
-        Date currentDate;
-        try {
-            currentDate = simpleDateFormat.parse(date);
-        } catch (ParseException e) {
-            throw new CannotParseDateException(e.getMessage());
-        }
-        return targetSimpleDateFormat.format(currentDate);
     }
 }
