@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AtmRepairService {
 
-    private final AtmRepairRepository repository;
     @Autowired
     private ModelMapper modelMapper;
+    private final AtmRepairRepository repository;
 
     public Integer readFileFromExcel(MultipartFile file) throws IOException {
         List<AtmRepair> repairs = Poiji.fromExcel(file.getInputStream(), defineExcelType(file), AtmRepair.class);
