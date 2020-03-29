@@ -14,12 +14,8 @@ import ru.korovko.atm.repository.AtmRepairRepository;
 
 import javax.transaction.Transactional;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,16 +44,14 @@ public class AtmRepairService {
     private void saveDataToDatabase(List<AtmRepair> repairs) {
         for (AtmRepair repair : repairs) {
             AtmRepairEntity entity = modelMapper.map(repair, AtmRepairEntity.class);
+            entity.setStartDate(parseStringToLocalDateTime(repair.getStartDate()));
+            entity.setEndDate(parseStringToLocalDateTime(repair.getEndDate()));
             repository.save(entity);
         }
     }
 
-//    private Date parseDate(AtmRepair repair) throws ParseException {
-//        String pattern = "dd-MM-yyyy hh:mm";
-//        DateFormat originalFormat = new SimpleDateFormat("d/M/yy h:mm");
-//        DateFormat targetFormat = new SimpleDateFormat(pattern);
-//        Date date = originalFormat.parse(repair.getStartDate());
-//        String formattedDate = targetFormat.format(date);
-//        return new SimpleDateFormat(pattern).parse(formattedDate);
-//    }
+    private LocalDateTime parseStringToLocalDateTime(String date) {
+        String pattern = "M/d/yy H:mm";
+        return LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
+    }
 }
