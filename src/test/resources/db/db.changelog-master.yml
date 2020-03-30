@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      runAlways: false
+      id: 20200323_01
+      author: Alexey Korovko
+      changes:
+        - sqlFile:
+            path: changelog/001_initial_schema.sql
+            enchoding: utf8
+            relativeToChangelogFile: true
