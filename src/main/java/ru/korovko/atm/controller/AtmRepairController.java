@@ -35,11 +35,16 @@ public class AtmRepairController {
 
     @GetMapping("/reasons")
     public List<String> getTopThreeRepairReasons() {
-        return handler.getTopThreeRepeatableReasons();
+        return handler.getTopThreeRecurringReasons();
     }
 
     @GetMapping("/longest")
     public List<AtmRepair> getTopThreeLongestRepairs() {
         return handler.getTopThreeLongestRepairs();
+    }
+
+    @GetMapping("/repeatable")
+    public List<AtmRepair> getRepeatableRepairs() {
+        return handler.getTopThreeRecurringRepairs();
     }
 }

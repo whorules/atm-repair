@@ -124,7 +124,20 @@ public class AtmRepairControllerTest {
         mockMvc.perform(get("/atmRepair/longest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(388251))
-                .andExpect(jsonPath("[1].atmId").value(386833))
+                .andExpect(jsonPath("[1].atmId").value(398729))
                 .andExpect(jsonPath("[2].atmId").value(393592));
+    }
+
+    @Test
+    public void getTopThreeRecurringRepairsMethodWorksCorrect() throws Exception {
+        mockMvc.perform
+                (multipart("/atmRepair")
+                        .file(multipartFile))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", is(10)));
+        mockMvc.perform(get("/atmRepair/repeatable"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("[0].atmId").value(372152))
+                .andExpect(jsonPath("[1].atmId").value(398729));
     }
 }

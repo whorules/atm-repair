@@ -5,14 +5,14 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.korovko.atm.dto.AtmRepair;
+import ru.korovko.atm.dto.LongestRepairComparator;
 import ru.korovko.atm.dto.RepairDateComparator;
 import ru.korovko.atm.entity.AtmRepairEntity;
 import ru.korovko.atm.repository.AtmRepairRepository;
 import ru.korovko.atm.service.AtmRepairService;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,7 +24,7 @@ public class AtmRepairHandler {
     @Autowired
     ModelMapper modelMapper;
 
-    public List<String> getTopThreeRepeatableReasons() {
+    public List<String> getTopThreeRecurringReasons() {
         List<AtmRepair> repairs = service.getAllData();
         Map<String, Long> count = repairs.stream()
                 .collect(Collectors.groupingBy(AtmRepair::getReason, Collectors.counting()));
@@ -37,17 +37,42 @@ public class AtmRepairHandler {
 
     public List<AtmRepair> getTopThreeLongestRepairs() {
         List<AtmRepairEntity> entities = repository.findAll();
-        List<AtmRepair> list =
-         entities.stream()
-                .sorted(new RepairDateComparator())
+        return entities.stream()
+                .sorted(new LongestRepairComparator())
+                .limit(3)
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
-                 .peek(service::changeDateForAtmRepair)
-                 .limit(3)
-                 .collect(Collectors.toList());
-    return list;
+                .peek(service::changeDateForAtmRepair)
+                .collect(Collectors.toList());
     }
 
-    private List<AtmRepair> getRepeatableRepairs() {
-        return null;
+    public List<AtmRepair> getTopThreeRecurringRepairs() {
+        List<AtmRepairEntity> allRepairs = repository.findAll();
+        List<AtmRepair> repeatableRepairs = new ArrayList<>();
+        List<List<AtmRepairEntity>> list = getRecurringRepairs(allRepairs);
+        for (List<AtmRepairEntity> currentList : list) {
+            for (int j = 0; j < currentList.size(); j++) {
+                if (j == currentList.size() - 1) {
+                    continue;
+                }
+                AtmRepairEntity currentEntity = currentList.get(j);
+                AtmRepairEntity nextEntity = currentList.get(j + 1);
+                if (ChronoUnit.DAYS.between(currentEntity.getEndDate(), nextEntity.getStartDate()) <= 15
+                        && currentEntity.getReason().equalsIgnoreCase(nextEntity.getReason())) {
+                    AtmRepair atmRepair = modelMapper.map(currentEntity, AtmRepair.class);
+                    service.changeDateForAtmRepair(atmRepair);
+                    repeatableRepairs.add(atmRepair);
+                }
+            }
+        }
+        return repeatableRepairs;
+    }
+
+    private List<List<AtmRepairEntity>> getRecurringRepairs(List<AtmRepairEntity> entities) {
+        Map<Long, List<AtmRepairEntity>> map = entities.stream()
+                .collect(Collectors.groupingBy(AtmRepairEntity::getAtmId));
+        return map.values().stream()
+                .filter(atmRepairEntities -> atmRepairEntities.size() > 1)
+                .peek(atmRepairEntities -> atmRepairEntities.sort(new RepairDateComparator()))
+                .collect(Collectors.toList());
     }
 }
