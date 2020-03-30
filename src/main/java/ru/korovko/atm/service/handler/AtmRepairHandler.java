@@ -36,14 +36,15 @@ public class AtmRepairHandler {
     }
 
     public List<AtmRepair> getTopThreeLongestRepairs() {
-        RepairDateComparator comparator = new RepairDateComparator();
         List<AtmRepairEntity> entities = repository.findAll();
-        return entities.stream()
-                .sorted(comparator)
-                .limit(3)
+        List<AtmRepair> list =
+         entities.stream()
+                .sorted(new RepairDateComparator())
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
-                .peek(service::changeDateForAtmRepair)
-                .collect(Collectors.toList());
+                 .peek(service::changeDateForAtmRepair)
+                 .limit(3)
+                 .collect(Collectors.toList());
+    return list;
     }
 
     private List<AtmRepair> getRepeatableRepairs() {

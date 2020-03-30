@@ -19,10 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {Application.class})
@@ -52,7 +51,7 @@ public class AtmRepairControllerTest {
     }
 
     @Test
-    public void fileUploadsAndReturnsCountOfUploadedValues() throws Exception {
+    public void fileUploadsToDatabaseAndReturnsCountOfUploadedValues() throws Exception {
         mockMvc.perform
                 (multipart("/atmRepair")
                         .file(multipartFile))
@@ -61,7 +60,7 @@ public class AtmRepairControllerTest {
     }
 
     @Test
-    public void checkThatIncorrectFileFormatThrowsException() throws Exception {
+    public void incorrectFileFormatThrowsException() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.txt",
                 "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA));
         assertThatThrownBy(() -> mockMvc.perform
@@ -90,13 +89,14 @@ public class AtmRepairControllerTest {
     }
 
     @Test
-    public void deleteDataMethodWorksCorrect() throws Exception {
+    public void deleteAllDataMethodWorksCorrect() throws Exception {
         mockMvc.perform
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", is(10)));
-        repository.deleteAll();
+        mockMvc.perform(delete("/atmRepair"))
+                .andExpect(status().isOk());
         assertEquals(repository.findAll().size(), 0);
     }
 
@@ -112,5 +112,19 @@ public class AtmRepairControllerTest {
                 .andExpect(jsonPath("[0]").value("УС не выходит на связь с хостом"))
                 .andExpect(jsonPath("[1]").value("Банкомат закрыт (Up Closed)"))
                 .andExpect(jsonPath("[2]").value("CashIn - Ошибка"));
+    }
+
+    @Test
+    public void getTopThreeLongestRepairsMethodWorksCorrect() throws Exception {
+        mockMvc.perform
+                (multipart("/atmRepair")
+                        .file(multipartFile))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", is(10)));
+        mockMvc.perform(get("/atmRepair/longest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("[0].atmId").value(388251))
+                .andExpect(jsonPath("[1].atmId").value(386833))
+                .andExpect(jsonPath("[2].atmId").value(393592));
     }
 }
