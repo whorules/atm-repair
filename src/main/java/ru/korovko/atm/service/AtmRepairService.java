@@ -42,15 +42,15 @@ public class AtmRepairService {
     }
 
     @Transactional
-    public List<AtmRepair> getAllData() {
+    public List<AtmRepair> getAllAtmRepairEvents() {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
-                .peek(this::changeDateForAtmRepair)
+                .peek(this::changeDateFormatForAtmRepair)
                 .collect(Collectors.toList());
     }
 
-    public void changeDateForAtmRepair(AtmRepair repair) {
+    public void changeDateFormatForAtmRepair(AtmRepair repair) {
         repair.setStartDate(parseDateToCorrectFormat(repair.getStartDate()));
         repair.setEndDate(parseDateToCorrectFormat(repair.getEndDate()));
     }

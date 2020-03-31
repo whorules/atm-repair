@@ -8,9 +8,9 @@ import java.util.Comparator;
 public class LongestRepairComparator implements Comparator<AtmRepairEntity> {
 
     @Override
-    public int compare(AtmRepairEntity first, AtmRepairEntity second) {
-        long firstDate = ChronoUnit.SECONDS.between(first.getStartDate(), first.getEndDate());
-        long secondDate = ChronoUnit.SECONDS.between(second.getStartDate(), second.getEndDate());
-        return (int) (secondDate - firstDate);
+    public int compare(AtmRepairEntity firstAtm, AtmRepairEntity secondAtm) {
+        long firstAtmRepairmentDuration = ChronoUnit.SECONDS.between(firstAtm.getStartDate(), firstAtm.getEndDate());
+        long secondAtmRepairmentDuration = ChronoUnit.SECONDS.between(secondAtm.getStartDate(), secondAtm.getEndDate());
+        return (int) (secondAtmRepairmentDuration - firstAtmRepairmentDuration);
     }
 }

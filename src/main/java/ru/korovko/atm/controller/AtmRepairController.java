@@ -3,7 +3,6 @@ package ru.korovko.atm.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.ModelAndView;
 import ru.korovko.atm.dto.AtmRepair;
 import ru.korovko.atm.service.AtmRepairService;
 import ru.korovko.atm.service.handler.AtmRepairHandler;
@@ -25,8 +24,8 @@ public class AtmRepairController {
     }
 
     @GetMapping("/getAll")
-    public List<AtmRepair> showAllData() {
-        return service.getAllData();
+    public List<AtmRepair> getAllAtmRepairEvents() {
+        return service.getAllAtmRepairEvents();
     }
 
     @DeleteMapping()

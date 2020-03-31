@@ -26,7 +26,7 @@ public class AtmRepairHandler {
     private final ModelMapper modelMapper;
 
     public List<String> getTopThreeRecurringReasons() {
-        List<AtmRepair> repairs = service.getAllData();
+        List<AtmRepair> repairs = service.getAllAtmRepairEvents();
         Map<String, Long> count = repairs.stream()
                 .collect(Collectors.groupingBy(AtmRepair::getReason, Collectors.counting()));
         return count.entrySet().stream()
@@ -42,7 +42,7 @@ public class AtmRepairHandler {
                 .sorted(new LongestRepairComparator())
                 .limit(3)
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
-                .peek(service::changeDateForAtmRepair)
+                .peek(service::changeDateFormatForAtmRepair)
                 .collect(Collectors.toList());
     }
 
@@ -60,7 +60,7 @@ public class AtmRepairHandler {
                 if (ChronoUnit.DAYS.between(currentEntity.getEndDate(), nextEntity.getStartDate()) <= 15
                         && currentEntity.getReason().equalsIgnoreCase(nextEntity.getReason())) {
                     AtmRepair atmRepair = modelMapper.map(currentEntity, AtmRepair.class);
-                    service.changeDateForAtmRepair(atmRepair);
+                    service.changeDateFormatForAtmRepair(atmRepair);
                     repeatableRepairs.add(atmRepair);
                 }
             }

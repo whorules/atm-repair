@@ -7,7 +7,7 @@ import java.util.Comparator;
 public class RepairDateComparator implements Comparator<AtmRepairEntity> {
 
     @Override
-    public int compare(AtmRepairEntity o1, AtmRepairEntity o2) {
-        return o1.getStartDate().compareTo(o2.getStartDate());
+    public int compare(AtmRepairEntity firstAtm, AtmRepairEntity secondAtm) {
+        return firstAtm.getStartDate().compareTo(secondAtm.getStartDate());
     }
 }
