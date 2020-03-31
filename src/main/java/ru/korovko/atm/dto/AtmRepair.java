@@ -8,11 +8,10 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class AtmRepair {
 
-    private Long id;
     @ExcelCell(0)
     private Long caseId;
     @ExcelCell(1)
-    private Long atmId;
+    private String atmId;
     @ExcelCell(2)
     private String reason;
     @ExcelCell(3)
@@ -24,5 +23,5 @@ public class AtmRepair {
     @ExcelCell(6)
     private String bankName;
     @ExcelCell(7)
-    private String link;
+    private String channel;
 }

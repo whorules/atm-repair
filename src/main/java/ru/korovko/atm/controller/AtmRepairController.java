@@ -3,6 +3,7 @@ package ru.korovko.atm.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 import ru.korovko.atm.dto.AtmRepair;
 import ru.korovko.atm.service.AtmRepairService;
 import ru.korovko.atm.service.handler.AtmRepairHandler;
@@ -20,10 +21,10 @@ public class AtmRepairController {
 
     @PostMapping()
     public Integer uploadFile(MultipartFile file) throws IOException {
-        return service.readFileFromExcel(file);
+        return service.uploadExcelFileToDatabase(file);
     }
 
-    @GetMapping()
+    @GetMapping("/getAll")
     public List<AtmRepair> showAllData() {
         return service.getAllData();
     }
@@ -43,8 +44,8 @@ public class AtmRepairController {
         return handler.getTopThreeLongestRepairs();
     }
 
-    @GetMapping("/repeatable")
-    public List<AtmRepair> getRepeatableRepairs() {
-        return handler.getTopThreeRecurringRepairs();
+    @GetMapping("/recurring")
+    public List<AtmRepair> getRecurringRepairs() {
+        return handler.getAllRecurringRepairs();
     }
 }

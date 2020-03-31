@@ -2,7 +2,6 @@ package ru.korovko.atm.service.handler;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.korovko.atm.dto.AtmRepair;
 import ru.korovko.atm.dto.LongestRepairComparator;
@@ -12,7 +11,10 @@ import ru.korovko.atm.repository.AtmRepairRepository;
 import ru.korovko.atm.service.AtmRepairService;
 
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -21,8 +23,7 @@ public class AtmRepairHandler {
 
     private final AtmRepairService service;
     private final AtmRepairRepository repository;
-    @Autowired
-    ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     public List<String> getTopThreeRecurringReasons() {
         List<AtmRepair> repairs = service.getAllData();
@@ -45,7 +46,7 @@ public class AtmRepairHandler {
                 .collect(Collectors.toList());
     }
 
-    public List<AtmRepair> getTopThreeRecurringRepairs() {
+    public List<AtmRepair> getAllRecurringRepairs() {
         List<AtmRepairEntity> allRepairs = repository.findAll();
         List<AtmRepair> repeatableRepairs = new ArrayList<>();
         List<List<AtmRepairEntity>> list = getRecurringRepairs(allRepairs);
@@ -68,7 +69,7 @@ public class AtmRepairHandler {
     }
 
     private List<List<AtmRepairEntity>> getRecurringRepairs(List<AtmRepairEntity> entities) {
-        Map<Long, List<AtmRepairEntity>> map = entities.stream()
+        Map<String, List<AtmRepairEntity>> map = entities.stream()
                 .collect(Collectors.groupingBy(AtmRepairEntity::getAtmId));
         return map.values().stream()
                 .filter(atmRepairEntities -> atmRepairEntities.size() > 1)

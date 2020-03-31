@@ -2,14 +2,13 @@ set search_path = public;
 
 CREATE TABLE atm_repair
 (
-  id                bigserial     NOT NULL,
-  case_id           bigint        NOT NULL,
-  atm_id            bigint        NOT NULL,
+  case_id           bigserial     NOT NULL,
+  atm_id            text          NOT NULL,
   reason            text          NOT NULL,
   start_date        timestamp     NOT NULL,
   end_date          timestamp     NOT NULL,
-  serial_number     varchar(45)   NOT NULL,
-  bank_name         varchar(45)   NOT NULL,
-  link              varchar(45)   NOT NULL
+  serial_number     text          NOT NULL,
+  bank_name         text          NOT NULL,
+  channel           text          NOT NULL
 );
-ALTER TABLE atm_repair ADD CONSTRAINT atm_repair_pkey PRIMARY KEY (id);
+ALTER TABLE atm_repair ADD CONSTRAINT atm_repair_ukey PRIMARY KEY (case_id);

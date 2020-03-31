@@ -5,17 +5,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.korovko.atm.exception.IncorrectFileFormatException;
+import ru.korovko.atm.exception.IncorrectFileExtensionException;
 import ru.korovko.atm.repository.AtmRepairRepository;
 
 import java.io.FileInputStream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,8 +28,8 @@ public class AtmRepairControllerTest {
 
     private static final String PATH_TO_TEST_FILES = System.getProperty("user.dir") +
             "\\src\\test\\resources\\files\\";
-    private static final String TEST_DATA = "test_file.xlsx";
-    private static final String SINGLE_TEST_DATA = "test_file_with_single_data.xlsx";
+    private static final String TEST_DATA_FILENAME = "test_file.xlsx";
+    private static final String SINGLE_TEST_DATA_FILENAME = "test_file_with_single_data.xlsx";
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -42,7 +39,7 @@ public class AtmRepairControllerTest {
     @BeforeEach
     void setUp() throws Exception {
         multipartFile = new MockMultipartFile("file", "test.file.xlsx",
-                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA));
+                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA_FILENAME));
     }
 
     @AfterEach()
@@ -62,22 +59,22 @@ public class AtmRepairControllerTest {
     @Test
     public void incorrectFileFormatThrowsException() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.txt",
-                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA));
+                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA_FILENAME));
         assertThatThrownBy(() -> mockMvc.perform
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isInternalServerError()))
-                .hasCause(new IncorrectFileFormatException("File format is incorrect"));
+                .hasCause(new IncorrectFileExtensionException("File format is incorrect"));
     }
 
     @Test
     public void getAllMethodReturnsCorrectJson() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.xlsx",
-                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + SINGLE_TEST_DATA));
+                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + SINGLE_TEST_DATA_FILENAME));
         mockMvc.perform
                 (multipart("/atmRepair")
                         .file(multipartFile));
-        mockMvc.perform(get("/atmRepair"))
+        mockMvc.perform(get("/atmRepair/getAll"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].caseId").value(218728186))
                 .andExpect(jsonPath("[0].atmId").value(398729))
@@ -85,7 +82,7 @@ public class AtmRepairControllerTest {
                 .andExpect(jsonPath("[0].startDate").value("05-01-2020 03:07"))
                 .andExpect(jsonPath("[0].endDate").value("05-01-2020 03:59"))
                 .andExpect(jsonPath("[0].bankName").value("Банк ВТБ24"))
-                .andExpect(jsonPath("[0].link").value("Банк"));
+                .andExpect(jsonPath("[0].channel").value("Банк"));
     }
 
     @Test
@@ -110,8 +107,8 @@ public class AtmRepairControllerTest {
         mockMvc.perform(get("/atmRepair/reasons"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0]").value("УС не выходит на связь с хостом"))
-                .andExpect(jsonPath("[1]").value("Банкомат закрыт (Up Closed)"))
-                .andExpect(jsonPath("[2]").value("CashIn - Ошибка"));
+                .andExpect(jsonPath("[1]").value("CashIn - Ошибка"))
+                .andExpect(jsonPath("[2]").value("Банкомат закрыт (Up Closed)"));
     }
 
     @Test
@@ -135,7 +132,7 @@ public class AtmRepairControllerTest {
                         .file(multipartFile))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", is(10)));
-        mockMvc.perform(get("/atmRepair/repeatable"))
+        mockMvc.perform(get("/atmRepair/recurring"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(372152))
                 .andExpect(jsonPath("[1].atmId").value(398729));

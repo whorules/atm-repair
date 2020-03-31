@@ -13,14 +13,12 @@ import java.time.LocalDateTime;
 public class AtmRepairEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     private Long caseId;
-    private Long atmId;
+    private String atmId;
     private String reason;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private String serialNumber;
     private String bankName;
-    private String link;
+    private String channel;
 }
