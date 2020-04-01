@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Atm repair</title>
+    <style>
+      body {
+        padding: 8px;
+      }
+
+      .toolbar-block {
+        border: 1px solid gray;
+        padding: 16px;
+        display: flex;
+      }
+
+      .hidden-file-input {
+        display: none;
+      }
+
+      .show-all-button {
+        margin-left: 16px;
+      }
+
+      td {
+        text-align: center;
+        padding: 0 8px;
+      }
+    </style>
+</head>
+<body>
+<div class="toolbar-block">
+    <form id="fileForm" onsubmit="processFileSubmit(event)">
+        <input
+                id="fileInput"
+                name="file"
+                type="file"
+                accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                class="hidden-file-input"
+        />
+        <button type="button" onclick="fileInput.click()">Choose file</button>
+        <button type="submit">Upload</button>
+        <div id="uploadedFilesLabel"></div>
+    </form>
+    <button type="button" onclick="deleteData()" class="show-all-button">
+        Delete all
+    </button>
+    <button type="button" onclick="showAllData()" class="show-all-button">
+        Show all
+    </button>
+    <button
+            type="button"
+            onclick="getLongestRepairs()"
+            class="show-all-button">
+        Top 3 longest repairs
+    </button>
+    <button type="button" onclick="recurringRepairs()" class="show-all-button">
+        Recurring repairs
+    </button>
+    <button type="button" onclick="topRepairReasons()" class="show-all-button">
+        Top 3 reasons
+    </button>
+</div>
+<div id="reasons"></div>
+<table id="itemsTable"></table>
+
+<script>
+      function processFileSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(fileForm);
+        fetch("http://localhost:8082/atmRepair", {
+          method: "POST",
+          body: formData
+        })
+          .then(response => response.json())
+          .then(data => {
+            uploadedFilesLabel.innerHTML = `Uploaded files count: ${
+              data.uploadedFilesCount
+            }`;
+          });
+        fileInput.value = null;
+      }
+
+      function deleteData() {
+        fetch("http://localhost:8082/atmRepair", {
+          method: "DELETE",
+        });
+      }
+
+      function showAllData() {
+        fetch("http://localhost:8082/atmRepair/getAll", {
+          method: "GET"
+        })
+          .then(response => response.json())
+          .then(items => {
+            convertArrayToTable(itemsTable, items);
+          });
+      }
+
+      function getLongestRepairs() {
+        const url = new URL("http://localhost:8082/atmRepair/longest");
+        url.searchParams.append("count", 3);
+        fetch(url, {
+          method: "GET"
+        })
+          .then(response => response.json())
+          .then(items => {
+            convertArrayToTable(itemsTable, items);
+          });
+      }
+
+      function topRepairReasons() {
+        const url = new URL("http://localhost:8082/atmRepair/reasons");
+        url.searchParams.append("count", 3);
+        fetch(url, {
+          method: "GET"
+        })
+          .then(response => response.json())
+          .then(items => {
+            reasons.innerHTML = `Top reasons: ${
+              items.join(", ")
+            }`;
+          });
+      }
+
+      function recurringRepairs() {
+        fetch("http://localhost:8082/atmRepair/recurring", {
+          method: "GET"
+        })
+          .then(response => response.json())
+          .then(items => {
+            convertArrayToTable(itemsTable, items);
+          });
+      }
+
+
+      /** Convert array of objects to specified table element */
+      function convertArrayToTable(tableElement, array) {
+        if (!Array.isArray(array)) {
+          return;
+        }
+        tableElement.innerHTML = "";
+
+        // 1. Create header
+        const keys = Object.keys(array[0] || []);
+        const headerTableRow = convertArrayToTableRow(keys, true);
+        tableElement.appendChild(headerTableRow);
+
+        // 2. Create content
+        array.forEach(item => {
+          const values = Object.values(item);
+          const itemTableRow = convertArrayToTableRow(values, false);
+          tableElement.appendChild(itemTableRow);
+        });
+      }
+
+      /**
+      Converts array of values to table row element
+      e.g. [1, 2, 3] -> <tr><td>1</td><td>2</td><td>3</td></tr>
+       */
+      function convertArrayToTableRow(array, isHeader) {
+        const parentElement = document.createElement("tr");
+        array.forEach(value => {
+          const element = convertValueToTableCell(value, isHeader);
+          parentElement.appendChild(element);
+        });
+
+        return parentElement;
+      }
+
+      /** Converts single value to table cell element (th or td) */
+      function convertValueToTableCell(value, isHeader) {
+        const element = document.createElement(isHeader ? "th" : "td");
+        element.innerHTML = value;
+
+        return element;
+      }
+    </script>
+</body>
+</html>
