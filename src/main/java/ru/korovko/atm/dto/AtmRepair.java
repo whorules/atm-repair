@@ -1,11 +1,13 @@
 package ru.korovko.atm.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.poiji.annotation.ExcelCell;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 @Data
 @Accessors(chain = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AtmRepair {
 
     @ExcelCell(0)
@@ -24,4 +26,5 @@ public class AtmRepair {
     private String bankName;
     @ExcelCell(7)
     private String channel;
+    private Integer uploadedFilesCount;
 }

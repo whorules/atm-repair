@@ -11,4 +11,4 @@ CREATE TABLE atm_repair
   bank_name         text          NOT NULL,
   channel           text          NOT NULL
 );
-ALTER TABLE atm_repair ADD CONSTRAINT atm_repair_ukey PRIMARY KEY (case_id);
+ALTER TABLE atm_repair ADD CONSTRAINT atm_repair_pkey PRIMARY KEY (case_id);

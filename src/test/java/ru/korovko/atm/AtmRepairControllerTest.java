@@ -53,7 +53,7 @@ public class AtmRepairControllerTest {
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is(10)));
+                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class AtmRepairControllerTest {
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is(10)));
+                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
         mockMvc.perform(delete("/atmRepair"))
                 .andExpect(status().isOk());
         assertEquals(repository.findAll().size(), 0);
@@ -103,8 +103,9 @@ public class AtmRepairControllerTest {
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is(10)));
-        mockMvc.perform(get("/atmRepair/reasons"))
+                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
+        mockMvc.perform(get("/atmRepair/reasons")
+        .param("count", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0]").value("УС не выходит на связь с хостом"))
                 .andExpect(jsonPath("[1]").value("CashIn - Ошибка"))
@@ -117,8 +118,9 @@ public class AtmRepairControllerTest {
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is(10)));
-        mockMvc.perform(get("/atmRepair/longest"))
+                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
+        mockMvc.perform(get("/atmRepair/longest")
+                .param("count", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(388251))
                 .andExpect(jsonPath("[1].atmId").value(398729))
@@ -131,7 +133,7 @@ public class AtmRepairControllerTest {
                 (multipart("/atmRepair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is(10)));
+                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
         mockMvc.perform(get("/atmRepair/recurring"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(372152))
