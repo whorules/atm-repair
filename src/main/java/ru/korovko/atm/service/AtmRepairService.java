@@ -20,24 +20,23 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AtmRepairService {
 
+    private static final SimpleDateFormat CURRENT_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+    private static final SimpleDateFormat TARGET_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
     private final ModelMapper modelMapper;
     private final AtmRepairRepository repository;
 
     public AtmRepair uploadExcelFileToDatabase(MultipartFile file) throws IOException {
-        List<AtmRepair> repairs = Poiji.fromExcel(file.getInputStream(), determineExcelType(file), AtmRepair.class);
+        List<AtmRepair> repairs = Poiji.fromExcel(file.getInputStream(),
+                determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepair.class);
         saveDataToDatabase(repairs);
         return new AtmRepair()
                 .setUploadedFilesCount(repairs.size());
@@ -49,7 +48,7 @@ public class AtmRepairService {
     }
 
     @Transactional
-    public List<AtmRepair> getAllAtmRepairEvents() {
+    public List<AtmRepair> getAllAtmRepairs() {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
                 .map(entity -> modelMapper.map(entity, AtmRepair.class))
@@ -58,10 +57,10 @@ public class AtmRepairService {
     }
 
     public List<String> getTopRecurringReasons(Integer reasonsCount) {
-        List<AtmRepair> repairs = getAllAtmRepairEvents();
-        Map<String, Long> count = repairs.stream()
+        List<AtmRepair> repairs = getAllAtmRepairs();
+        Map<String, Long> counts = repairs.stream()
                 .collect(Collectors.groupingBy(AtmRepair::getReason, Collectors.counting()));
-        return count.entrySet().stream()
+        return counts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(reasonsCount)
                 .map(Map.Entry::getKey)
@@ -78,34 +77,25 @@ public class AtmRepairService {
                 .collect(Collectors.toList());
     }
 
-    public List<AtmRepair> getAllRecurringRepairs() {
-        List<AtmRepair> repeatableRepairs = new ArrayList<>();
-        List<List<AtmRepairEntity>> list = getRecurringRepairsForEachATM(repository.findAll());
-        for (List<AtmRepairEntity> currentList : list) {
-            for (int j = 0; j < currentList.size(); j++) {
-                if (j == currentList.size() - 1) {
-                    break;
-                }
-                AtmRepairEntity currentEntity = currentList.get(j);
-                AtmRepairEntity nextEntity = currentList.get(j + 1);
-                if (ChronoUnit.DAYS.between(currentEntity.getEndDate(), nextEntity.getStartDate()) <= 15
-                        && currentEntity.getReason().equalsIgnoreCase(nextEntity.getReason())) {
-                    AtmRepair atmRepair = modelMapper.map(currentEntity, AtmRepair.class);
-                    changeDateFormatForAtmRepair(atmRepair);
-                    repeatableRepairs.add(atmRepair);
-                }
+    public List<AtmRepair> getRecurringRepairs() {
+        List<AtmRepairEntity> entities = repository.findAll();
+        entities.sort(new RepairDateComparator());
+        Map<String, AtmRepairEntity> lastRepairDateMap = new HashMap<>();
+        List<AtmRepair> recurringRepairs = new ArrayList<>();
+        for (AtmRepairEntity entity : entities) {
+            AtmRepairEntity entityFromMap = lastRepairDateMap.get(hashFrom(entity));
+            if (entityFromMap != null && ChronoUnit.DAYS.between(entityFromMap.getEndDate(), entity.getStartDate()) <= 15) {
+                AtmRepair repair = modelMapper.map(entityFromMap, AtmRepair.class);
+                changeDateFormatForAtmRepair(repair);
+                recurringRepairs.add(repair);
             }
+            lastRepairDateMap.put(hashFrom(entity), entity);
         }
-        return repeatableRepairs;
+        return recurringRepairs;
     }
 
-    private List<List<AtmRepairEntity>> getRecurringRepairsForEachATM(List<AtmRepairEntity> entities) {
-        Map<String, List<AtmRepairEntity>> map = entities.stream()
-                .collect(Collectors.groupingBy(AtmRepairEntity::getAtmId));
-        return map.values().stream()
-                .filter(atmRepairEntities -> atmRepairEntities.size() > 1)
-                .peek(atmRepairEntities -> atmRepairEntities.sort(new RepairDateComparator()))
-                .collect(Collectors.toList());
+    private String hashFrom(AtmRepairEntity entity) {
+        return entity.getAtmId() + "--" + entity.getReason();
     }
 
     private void changeDateFormatForAtmRepair(AtmRepair repair) {
@@ -114,13 +104,9 @@ public class AtmRepairService {
     }
 
     private String parseDateToCorrectFormat(String date) {
-        String currentPattern = "yyyy-MM-dd'T'HH:mm";
-        String targetFormat = "dd-MM-yyyy HH:mm";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(currentPattern);
-        SimpleDateFormat targetSimpleDateFormat = new SimpleDateFormat(targetFormat);
         try {
-            Date currentDate = simpleDateFormat.parse(date);
-            return targetSimpleDateFormat.format(currentDate);
+            Date currentDate = CURRENT_FORMAT.parse(date);
+            return TARGET_FORMAT.format(currentDate);
         } catch (ParseException e) {
             throw new CannotParseDateException(e.getMessage(), e);
         }
@@ -136,10 +122,10 @@ public class AtmRepairService {
         }
     }
 
-    private PoijiExcelType determineExcelType(MultipartFile file) {
-        if (Objects.requireNonNull(file.getOriginalFilename()).endsWith(".xls")) {
+    private PoijiExcelType determineExcelType(String fileName) {
+        if (fileName.endsWith(".xls")) {
             return PoijiExcelType.XLS;
-        } else if (file.getOriginalFilename().endsWith(".xlsx")) {
+        } else if (fileName.endsWith(".xlsx")) {
             return PoijiExcelType.XLSX;
         } else {
             throw new IncorrectFileExtensionException("File format is incorrect");
@@ -148,6 +134,12 @@ public class AtmRepairService {
 
     private LocalDateTime parseStringToLocalDateTime(String date) {
         String pattern = "M/d/yy H:mm";
-        return LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
+        LocalDateTime parse;
+        try {
+            parse = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
+        } catch (DateTimeParseException e) {
+            throw new CannotParseDateException(e.getMessage(), e);
+        }
+        return parse;
     }
 }

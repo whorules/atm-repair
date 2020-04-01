@@ -57,17 +57,6 @@ public class AtmRepairControllerTest {
     }
 
     @Test
-    public void incorrectFileFormatThrowsException() throws Exception {
-        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.txt",
-                "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + TEST_DATA_FILENAME));
-        assertThatThrownBy(() -> mockMvc.perform
-                (multipart("/atmRepair")
-                        .file(multipartFile))
-                .andExpect(status().isInternalServerError()))
-                .hasCause(new IncorrectFileExtensionException("File format is incorrect"));
-    }
-
-    @Test
     public void getAllMethodReturnsCorrectJson() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.xlsx",
                 "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + SINGLE_TEST_DATA_FILENAME));
@@ -136,7 +125,7 @@ public class AtmRepairControllerTest {
                 .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
         mockMvc.perform(get("/atmRepair/recurring"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("[0].atmId").value(372152))
-                .andExpect(jsonPath("[1].atmId").value(398729));
+                .andExpect(jsonPath("[0].atmId").value(398729))
+                .andExpect(jsonPath("[1].atmId").value(372152));
     }
 }

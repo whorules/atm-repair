@@ -24,7 +24,7 @@ public class AtmRepairController {
 
     @GetMapping("/getAll")
     public List<AtmRepair> getAllAtmRepairEvents() {
-        return service.getAllAtmRepairEvents();
+        return service.getAllAtmRepairs();
     }
 
     @DeleteMapping()
@@ -44,6 +44,6 @@ public class AtmRepairController {
 
     @GetMapping("/recurring")
     public List<AtmRepair> getRecurringRepairs() {
-        return service.getAllRecurringRepairs();
+        return service.getRecurringRepairs();
     }
 }
