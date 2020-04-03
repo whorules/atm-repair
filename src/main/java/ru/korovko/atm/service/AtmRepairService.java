@@ -29,7 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AtmRepairService {
 
-    private static final SimpleDateFormat CURRENT_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+    private static final String FORMAT_FROM_FILE = "M/d/yy H:mm";
+    private static final SimpleDateFormat FORMAT_FROM_DATABASE = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
     private static final SimpleDateFormat TARGET_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
     private final ModelMapper modelMapper;
     private final AtmRepairRepository repository;
@@ -105,7 +106,7 @@ public class AtmRepairService {
 
     private String parseDateToCorrectFormat(String date) {
         try {
-            Date currentDate = CURRENT_FORMAT.parse(date);
+            Date currentDate = FORMAT_FROM_DATABASE.parse(date);
             return TARGET_FORMAT.format(currentDate);
         } catch (ParseException e) {
             throw new CannotParseDateException(e.getMessage(), e);
@@ -133,10 +134,9 @@ public class AtmRepairService {
     }
 
     private LocalDateTime parseStringToLocalDateTime(String date) {
-        String pattern = "M/d/yy H:mm";
         LocalDateTime parse;
         try {
-            parse = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
+            parse = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(FORMAT_FROM_FILE));
         } catch (DateTimeParseException e) {
             throw new CannotParseDateException(e.getMessage(), e);
         }
