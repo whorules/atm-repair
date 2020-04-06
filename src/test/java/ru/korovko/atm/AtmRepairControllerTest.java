@@ -8,12 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.korovko.atm.exception.IncorrectFileExtensionException;
 import ru.korovko.atm.repository.AtmRepairRepository;
 
 import java.io.FileInputStream;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -94,7 +92,7 @@ public class AtmRepairControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
         mockMvc.perform(get("/atmRepair/reasons")
-        .param("count", "10"))
+                .param("count", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0]").value("УС не выходит на связь с хостом"))
                 .andExpect(jsonPath("[1]").value("CashIn - Ошибка"))
