@@ -35,6 +35,7 @@ public class AtmRepairService {
     private final ModelMapper modelMapper;
     private final AtmRepairRepository repository;
 
+    @Transactional
     public AtmRepair uploadExcelFileToDatabase(MultipartFile file) throws IOException {
         List<AtmRepair> repairs = Poiji.fromExcel(file.getInputStream(),
                 determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepair.class);
@@ -113,7 +114,6 @@ public class AtmRepairService {
         }
     }
 
-    @Transactional
     private void saveDataToDatabase(List<AtmRepair> repairs) {
         for (AtmRepair repair : repairs) {
             AtmRepairEntity entity = modelMapper.map(repair, AtmRepairEntity.class);
