@@ -1,4 +1,4 @@
-package ru.korovko.atm.dto;
+package ru.korovko.atm.utils;
 
 import ru.korovko.atm.entity.AtmRepairEntity;
 

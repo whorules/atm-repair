@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = {Application.class})
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AtmRepairControllerTest {
+public class AtmRepairResponseControllerTest {
 
     private static final String PATH_TO_TEST_FILES = System.getProperty("user.dir") +
             "\\src\\test\\resources\\files\\";
@@ -48,10 +48,10 @@ public class AtmRepairControllerTest {
     @Test
     public void fileUploadsToDatabaseAndReturnsCountOfUploadedValues() throws Exception {
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
+                .andExpect(jsonPath("$.count", is(10)));
     }
 
     @Test
@@ -59,9 +59,9 @@ public class AtmRepairControllerTest {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "test.file.xlsx",
                 "multipart/form-data", new FileInputStream(PATH_TO_TEST_FILES + SINGLE_TEST_DATA_FILENAME));
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile));
-        mockMvc.perform(get("/atmRepair/getAll"))
+        mockMvc.perform(get("/atm-repair"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].caseId").value(218728186))
                 .andExpect(jsonPath("[0].atmId").value(398729))
@@ -75,11 +75,11 @@ public class AtmRepairControllerTest {
     @Test
     public void deleteAllDataMethodWorksCorrect() throws Exception {
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
-        mockMvc.perform(delete("/atmRepair"))
+                .andExpect(jsonPath("$.count", is(10)));
+        mockMvc.perform(delete("/atm-repair"))
                 .andExpect(status().isOk());
         assertEquals(repository.findAll().size(), 0);
     }
@@ -87,11 +87,11 @@ public class AtmRepairControllerTest {
     @Test
     public void getTopThreeReasonsMethodWorksCorrect() throws Exception {
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
-        mockMvc.perform(get("/atmRepair/reasons")
+                .andExpect(jsonPath("$.count", is(10)));
+        mockMvc.perform(get("/atm-repair/reasons")
                 .param("count", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0]").value("УС не выходит на связь с хостом"))
@@ -102,11 +102,11 @@ public class AtmRepairControllerTest {
     @Test
     public void getTopThreeLongestRepairsMethodWorksCorrect() throws Exception {
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
-        mockMvc.perform(get("/atmRepair/longest")
+                .andExpect(jsonPath("$.count", is(10)));
+        mockMvc.perform(get("/atm-repair/longest")
                 .param("count", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(388251))
@@ -117,11 +117,11 @@ public class AtmRepairControllerTest {
     @Test
     public void getTopThreeRecurringRepairsMethodWorksCorrect() throws Exception {
         mockMvc.perform
-                (multipart("/atmRepair")
+                (multipart("/atm-repair")
                         .file(multipartFile))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.uploadedFilesCount", is(10)));
-        mockMvc.perform(get("/atmRepair/recurring"))
+                .andExpect(jsonPath("$.count", is(10)));
+        mockMvc.perform(get("/atm-repair/recurring"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("[0].atmId").value(398729))
                 .andExpect(jsonPath("[1].atmId").value(372152));

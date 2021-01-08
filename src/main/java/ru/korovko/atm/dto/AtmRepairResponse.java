@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AtmRepair {
+public class AtmRepairResponse {
 
     @ExcelCell(0)
     private Long caseId;
@@ -26,5 +26,4 @@ public class AtmRepair {
     private String bankName;
     @ExcelCell(7)
     private String channel;
-    private Integer uploadedFilesCount;
 }

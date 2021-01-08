@@ -5,24 +5,32 @@ import com.poiji.exception.PoijiExcelType;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ru.korovko.atm.dto.AtmRepair;
-import ru.korovko.atm.dto.LongestRepairComparator;
-import ru.korovko.atm.dto.RepairDateComparator;
+import ru.korovko.atm.dto.AtmRepairResponse;
+import ru.korovko.atm.dto.UploadedFilesResponse;
+import ru.korovko.atm.utils.LongestRepairComparator;
+import ru.korovko.atm.utils.RepairDateComparator;
 import ru.korovko.atm.entity.AtmRepairEntity;
 import ru.korovko.atm.exception.CannotParseDateException;
 import ru.korovko.atm.exception.IncorrectFileExtensionException;
 import ru.korovko.atm.repository.AtmRepairRepository;
 
-import javax.transaction.Transactional;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,38 +38,42 @@ import java.util.stream.Collectors;
 public class AtmRepairService {
 
     private static final String FORMAT_FROM_FILE = "M/d/yy H:mm";
-    private static final SimpleDateFormat FORMAT_FROM_DATABASE = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+    private static final SimpleDateFormat DATABASE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
     private static final SimpleDateFormat TARGET_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
+
     private final ModelMapper modelMapper;
     private final AtmRepairRepository repository;
 
     @Transactional
-    public AtmRepair uploadExcelFileToDatabase(MultipartFile file) throws IOException {
-        List<AtmRepair> repairs = Poiji.fromExcel(file.getInputStream(),
-                determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepair.class);
-        saveDataToDatabase(repairs);
-        return new AtmRepair()
-                .setUploadedFilesCount(repairs.size());
+    public UploadedFilesResponse uploadExcelFileToDatabase(MultipartFile file) throws IOException {
+        InputStream inputStream = file.getInputStream();
+
+        List<AtmRepairResponse> repairs = Poiji.fromExcel(inputStream,
+                determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepairResponse.class);
+        save(repairs);
+
+        inputStream.close();
+        return new UploadedFilesResponse()
+                .setCount(repairs.size());
     }
 
-    @Transactional
     public void deleteAll() {
         repository.deleteAll();
     }
 
-    @Transactional
-    public List<AtmRepair> getAllAtmRepairs() {
+    @Transactional(readOnly = true)
+    public List<AtmRepairResponse> getAll() {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
-                .map(entity -> modelMapper.map(entity, AtmRepair.class))
+                .map(entity -> modelMapper.map(entity, AtmRepairResponse.class))
                 .peek(this::changeDateFormatForAtmRepair)
                 .collect(Collectors.toList());
     }
 
     public List<String> getTopRecurringReasons(Integer reasonsCount) {
-        List<AtmRepair> repairs = getAllAtmRepairs();
+        List<AtmRepairResponse> repairs = getAll();
         Map<String, Long> counts = repairs.stream()
-                .collect(Collectors.groupingBy(AtmRepair::getReason, Collectors.counting()));
+                .collect(Collectors.groupingBy(AtmRepairResponse::getReason, Collectors.counting()));
         return counts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(reasonsCount)
@@ -69,25 +81,25 @@ public class AtmRepairService {
                 .collect(Collectors.toList());
     }
 
-    public List<AtmRepair> getTopLongestRepairs(Integer longestRepairsCount) {
+    public List<AtmRepairResponse> getTopLongestRepairs(Integer longestRepairsCount) {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
                 .sorted(new LongestRepairComparator())
                 .limit(longestRepairsCount)
-                .map(entity -> modelMapper.map(entity, AtmRepair.class))
+                .map(entity -> modelMapper.map(entity, AtmRepairResponse.class))
                 .peek(this::changeDateFormatForAtmRepair)
                 .collect(Collectors.toList());
     }
 
-    public List<AtmRepair> getRecurringRepairs() {
+    public List<AtmRepairResponse> getRecurringRepairs() {
         List<AtmRepairEntity> entities = repository.findAll();
         entities.sort(new RepairDateComparator());
         Map<String, AtmRepairEntity> lastRepairDateMap = new HashMap<>();
-        List<AtmRepair> recurringRepairs = new ArrayList<>();
+        List<AtmRepairResponse> recurringRepairs = new ArrayList<>();
         for (AtmRepairEntity entity : entities) {
             AtmRepairEntity entityFromMap = lastRepairDateMap.get(hashFrom(entity));
             if (entityFromMap != null && ChronoUnit.DAYS.between(entityFromMap.getEndDate(), entity.getStartDate()) <= 15) {
-                AtmRepair repair = modelMapper.map(entityFromMap, AtmRepair.class);
+                AtmRepairResponse repair = modelMapper.map(entityFromMap, AtmRepairResponse.class);
                 changeDateFormatForAtmRepair(repair);
                 recurringRepairs.add(repair);
             }
@@ -100,22 +112,22 @@ public class AtmRepairService {
         return entity.getAtmId() + "--" + entity.getReason();
     }
 
-    private void changeDateFormatForAtmRepair(AtmRepair repair) {
+    private void changeDateFormatForAtmRepair(AtmRepairResponse repair) {
         repair.setStartDate(parseDateToCorrectFormat(repair.getStartDate()));
         repair.setEndDate(parseDateToCorrectFormat(repair.getEndDate()));
     }
 
     private String parseDateToCorrectFormat(String date) {
         try {
-            Date currentDate = FORMAT_FROM_DATABASE.parse(date);
+            Date currentDate = DATABASE_FORMAT.parse(date);
             return TARGET_FORMAT.format(currentDate);
         } catch (ParseException e) {
             throw new CannotParseDateException(e.getMessage(), e);
         }
     }
 
-    private void saveDataToDatabase(List<AtmRepair> repairs) {
-        for (AtmRepair repair : repairs) {
+    private void save(List<AtmRepairResponse> repairs) {
+        for (AtmRepairResponse repair : repairs) {
             AtmRepairEntity entity = modelMapper.map(repair, AtmRepairEntity.class);
             entity.setStartDate(parseStringToLocalDateTime(repair.getStartDate()));
             entity.setEndDate(parseStringToLocalDateTime(repair.getEndDate()));
