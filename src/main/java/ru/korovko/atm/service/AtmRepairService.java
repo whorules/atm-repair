@@ -8,25 +8,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.korovko.atm.dto.AtmRepairResponse;
 import ru.korovko.atm.dto.UploadedFilesResponse;
+import ru.korovko.atm.entity.AtmRepairEntity;
+import ru.korovko.atm.exception.IncorrectFileExtensionException;
 import ru.korovko.atm.mapper.AtmRepairMapper;
+import ru.korovko.atm.repository.AtmRepairRepository;
 import ru.korovko.atm.utils.LongestRepairComparator;
 import ru.korovko.atm.utils.RepairDateComparator;
-import ru.korovko.atm.entity.AtmRepairEntity;
-import ru.korovko.atm.exception.CannotParseDateException;
-import ru.korovko.atm.exception.IncorrectFileExtensionException;
-import ru.korovko.atm.repository.AtmRepairRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +29,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AtmRepairService {
-
-    private static final String FORMAT_FROM_FILE = "M/d/yy H:mm";
-    private static final SimpleDateFormat DATABASE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-    private static final SimpleDateFormat TARGET_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
     private final AtmRepairRepository repository;
     private final AtmRepairMapper mapper;
