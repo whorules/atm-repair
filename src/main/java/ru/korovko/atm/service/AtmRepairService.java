@@ -3,12 +3,12 @@ package ru.korovko.atm.service;
 import com.poiji.bind.Poiji;
 import com.poiji.exception.PoijiExcelType;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.korovko.atm.dto.AtmRepairResponse;
 import ru.korovko.atm.dto.UploadedFilesResponse;
+import ru.korovko.atm.mapper.AtmRepairMapper;
 import ru.korovko.atm.utils.LongestRepairComparator;
 import ru.korovko.atm.utils.RepairDateComparator;
 import ru.korovko.atm.entity.AtmRepairEntity;
@@ -41,22 +41,23 @@ public class AtmRepairService {
     private static final SimpleDateFormat DATABASE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
     private static final SimpleDateFormat TARGET_FORMAT = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
-    private final ModelMapper modelMapper;
     private final AtmRepairRepository repository;
+    private final AtmRepairMapper mapper;
 
     @Transactional
-    public UploadedFilesResponse uploadExcelFileToDatabase(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-
-        List<AtmRepairResponse> repairs = Poiji.fromExcel(inputStream,
-                determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepairResponse.class);
-        save(repairs);
-
-        inputStream.close();
-        return new UploadedFilesResponse()
-                .setCount(repairs.size());
+    public UploadedFilesResponse upload(MultipartFile file) throws IOException {
+        List<AtmRepairResponse> repairs;
+        try (InputStream inputStream = file.getInputStream()) {
+            repairs = Poiji.fromExcel(inputStream,
+                    determineExcelType(Objects.requireNonNull(file.getOriginalFilename())), AtmRepairResponse.class);
+        }
+        repairs.stream()
+                .map(mapper::toEntity)
+                .forEach(repository::save);
+        return new UploadedFilesResponse().setCount(repairs.size());
     }
 
+    @Transactional
     public void deleteAll() {
         repository.deleteAll();
     }
@@ -65,11 +66,11 @@ public class AtmRepairService {
     public List<AtmRepairResponse> getAll() {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
-                .map(entity -> modelMapper.map(entity, AtmRepairResponse.class))
-                .peek(this::changeDateFormatForAtmRepair)
+                .map(mapper::toResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<String> getTopRecurringReasons(Integer reasonsCount) {
         List<AtmRepairResponse> repairs = getAll();
         Map<String, Long> counts = repairs.stream()
@@ -81,16 +82,17 @@ public class AtmRepairService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AtmRepairResponse> getTopLongestRepairs(Integer longestRepairsCount) {
         List<AtmRepairEntity> entities = repository.findAll();
         return entities.stream()
                 .sorted(new LongestRepairComparator())
                 .limit(longestRepairsCount)
-                .map(entity -> modelMapper.map(entity, AtmRepairResponse.class))
-                .peek(this::changeDateFormatForAtmRepair)
+                .map(mapper::toResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AtmRepairResponse> getRecurringRepairs() {
         List<AtmRepairEntity> entities = repository.findAll();
         entities.sort(new RepairDateComparator());
@@ -99,9 +101,7 @@ public class AtmRepairService {
         for (AtmRepairEntity entity : entities) {
             AtmRepairEntity entityFromMap = lastRepairDateMap.get(hashFrom(entity));
             if (entityFromMap != null && ChronoUnit.DAYS.between(entityFromMap.getEndDate(), entity.getStartDate()) <= 15) {
-                AtmRepairResponse repair = modelMapper.map(entityFromMap, AtmRepairResponse.class);
-                changeDateFormatForAtmRepair(repair);
-                recurringRepairs.add(repair);
+                recurringRepairs.add(mapper.toResponse(entityFromMap));
             }
             lastRepairDateMap.put(hashFrom(entity), entity);
         }
@@ -112,29 +112,6 @@ public class AtmRepairService {
         return entity.getAtmId() + "--" + entity.getReason();
     }
 
-    private void changeDateFormatForAtmRepair(AtmRepairResponse repair) {
-        repair.setStartDate(parseDateToCorrectFormat(repair.getStartDate()));
-        repair.setEndDate(parseDateToCorrectFormat(repair.getEndDate()));
-    }
-
-    private String parseDateToCorrectFormat(String date) {
-        try {
-            Date currentDate = DATABASE_FORMAT.parse(date);
-            return TARGET_FORMAT.format(currentDate);
-        } catch (ParseException e) {
-            throw new CannotParseDateException(e.getMessage(), e);
-        }
-    }
-
-    private void save(List<AtmRepairResponse> repairs) {
-        for (AtmRepairResponse repair : repairs) {
-            AtmRepairEntity entity = modelMapper.map(repair, AtmRepairEntity.class);
-            entity.setStartDate(parseStringToLocalDateTime(repair.getStartDate()));
-            entity.setEndDate(parseStringToLocalDateTime(repair.getEndDate()));
-            repository.save(entity);
-        }
-    }
-
     private PoijiExcelType determineExcelType(String fileName) {
         if (fileName.endsWith(".xls")) {
             return PoijiExcelType.XLS;
@@ -143,15 +120,5 @@ public class AtmRepairService {
         } else {
             throw new IncorrectFileExtensionException("File format is incorrect");
         }
-    }
-
-    private LocalDateTime parseStringToLocalDateTime(String date) {
-        LocalDateTime parse;
-        try {
-            parse = LocalDateTime.parse(date, DateTimeFormatter.ofPattern(FORMAT_FROM_FILE));
-        } catch (DateTimeParseException e) {
-            throw new CannotParseDateException(e.getMessage(), e);
-        }
-        return parse;
     }
 }

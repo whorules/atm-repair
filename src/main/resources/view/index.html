@@ -69,7 +69,7 @@
       function processFileSubmit(event) {
         event.preventDefault();
         const formData = new FormData(fileForm);
-        fetch("http://localhost:8082/atmRepair", {
+        fetch("http://localhost:8082/atm-repair", {
           method: "POST",
           body: formData
         })
@@ -83,13 +83,13 @@
       }
 
       function deleteData() {
-        fetch("http://localhost:8082/atmRepair", {
+        fetch("http://localhost:8082/atm-repair", {
           method: "DELETE",
         });
       }
 
       function showAllData() {
-        fetch("http://localhost:8082/atmRepair/getAll", {
+        fetch("http://localhost:8082/atm-repair/", {
           method: "GET"
         })
           .then(response => response.json())
@@ -99,7 +99,7 @@
       }
 
       function getLongestRepairs() {
-        const url = new URL("http://localhost:8082/atmRepair/longest");
+        const url = new URL("http://localhost:8082/atm-repair/longest");
         url.searchParams.append("count", 3);
         fetch(url, {
           method: "GET"
@@ -111,7 +111,7 @@
       }
 
       function topRepairReasons() {
-        const url = new URL("http://localhost:8082/atmRepair/reasons");
+        const url = new URL("http://localhost:8082/atm-repair/reasons");
         url.searchParams.append("count", 3);
         fetch(url, {
           method: "GET"
@@ -125,7 +125,7 @@
       }
 
       function recurringRepairs() {
-        fetch("http://localhost:8082/atmRepair/recurring", {
+        fetch("http://localhost:8082/atm-repair/recurring", {
           method: "GET"
         })
           .then(response => response.json())

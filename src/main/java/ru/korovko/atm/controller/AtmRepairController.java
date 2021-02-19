@@ -18,18 +18,18 @@ public class AtmRepairController {
 
     private final AtmRepairService service;
 
-    @PostMapping()
-    public UploadedFilesResponse uploadFile(MultipartFile file) throws IOException {
-        return service.uploadExcelFileToDatabase(file);
+    @PostMapping
+    public UploadedFilesResponse upload(MultipartFile file) throws IOException {
+        return service.upload(file);
     }
 
-    @GetMapping()
+    @GetMapping
     public List<AtmRepairResponse> getAllAtmRepairEvents() {
         return service.getAll();
     }
 
-    @DeleteMapping()
-    public void deleteAllData() {
+    @DeleteMapping
+    public void deleteAll() {
         service.deleteAll();
     }
 
